@@ -30,6 +30,7 @@ import org.schabi.newpipe.ktx.getStringSafe
 import org.schabi.newpipe.local.feed.FeedDatabaseManager
 import org.schabi.newpipe.local.subscription.SubscriptionManager
 import org.schabi.newpipe.util.ChannelTabHelper
+import org.schabi.newpipe.util.ContentAvailabilityFilter
 import org.schabi.newpipe.util.ExtractorHelper.getChannelInfo
 import org.schabi.newpipe.util.ExtractorHelper.getChannelTab
 import org.schabi.newpipe.util.ExtractorHelper.getMoreChannelTabItems
@@ -237,11 +238,17 @@ class FeedLoadManager(private val context: Context) {
                     .filterIsInstance<StreamInfoItem>()
             }
 
+            val hideMembersOnly = ContentAvailabilityFilter
+                .isHideMembersOnlyEnabled(context)
+            val visibleStreams = streams!!.filterNot {
+                ContentAvailabilityFilter.shouldHide(hideMembersOnly, it)
+            }
+
             return Notification.createOnNext(
                 FeedUpdateInfo(
                     subscriptionEntity,
                     originalInfo!!,
-                    streams!!,
+                    visibleStreams,
                     errors
                 )
             )

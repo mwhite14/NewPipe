@@ -17,10 +17,11 @@ import org.schabi.newpipe.extractor.channel.tabs.ChannelTabInfo
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import org.schabi.newpipe.local.feed.FeedDatabaseManager
 import org.schabi.newpipe.local.feed.service.FeedUpdateInfo
+import org.schabi.newpipe.util.ContentAvailabilityFilter
 import org.schabi.newpipe.util.ExtractorHelper
 import org.schabi.newpipe.util.image.ImageStrategy
 
-class SubscriptionManager(context: Context) {
+class SubscriptionManager(private val context: Context) {
     private val database = NewPipeDatabase.getInstance(context)
     private val subscriptionTable = database.subscriptionDAO()
     private val feedDatabaseManager = FeedDatabaseManager(context)
@@ -133,7 +134,14 @@ class SubscriptionManager(context: Context) {
             .flatMap { info ->
                 ExtractorHelper.getChannelTab(subscription.serviceId, info.tabs.first(), false)
             }
-            .map { channel -> channel.relatedItems.filterIsInstance<StreamInfoItem>().map { stream -> StreamEntity(stream) } }
+            .map { channel ->
+                val hideMembersOnly = ContentAvailabilityFilter
+                    .isHideMembersOnlyEnabled(context)
+                channel.relatedItems
+                    .filterIsInstance<StreamInfoItem>()
+                    .filterNot { ContentAvailabilityFilter.shouldHide(hideMembersOnly, it) }
+                    .map { stream -> StreamEntity(stream) }
+            }
             .flatMapCompletable { entities ->
                 Completable.fromAction {
                     database.streamDAO().upsertAll(entities)

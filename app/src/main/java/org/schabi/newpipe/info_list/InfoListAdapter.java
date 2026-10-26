@@ -32,6 +32,7 @@ import org.schabi.newpipe.info_list.holder.StreamGridInfoItemHolder;
 import org.schabi.newpipe.info_list.holder.StreamInfoItemHolder;
 import org.schabi.newpipe.info_list.holder.StreamMiniInfoItemHolder;
 import org.schabi.newpipe.local.history.HistoryRecordManager;
+import org.schabi.newpipe.util.ContentAvailabilityFilter;
 import org.schabi.newpipe.util.FallbackViewHolder;
 import org.schabi.newpipe.util.OnClickGesture;
 
@@ -132,8 +133,13 @@ public class InfoListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     + infoItemList.size() + ", data.size() = " + data.size());
         }
 
+        final List<InfoItem> filteredData = filterItems(data);
+        if (filteredData.isEmpty()) {
+            return;
+        }
+
         final int offsetStart = sizeConsideringHeaderOffset();
-        infoItemList.addAll(data);
+        infoItemList.addAll(filteredData);
 
         if (DEBUG) {
             Log.d(TAG, "addInfoItemList() after > offsetStart = " + offsetStart + ", "
@@ -141,7 +147,7 @@ public class InfoListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     + "hasHeader = " + hasHeader() + ", "
                     + "showFooter = " + showFooter);
         }
-        notifyItemRangeInserted(offsetStart, data.size());
+        notifyItemRangeInserted(offsetStart, filteredData.size());
 
         if (showFooter) {
             final int footerNow = sizeConsideringHeaderOffset();
@@ -152,6 +158,19 @@ public class InfoListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         + " to " + footerNow);
             }
         }
+    }
+
+    @NonNull
+    private List<InfoItem> filterItems(@NonNull final List<? extends InfoItem> data) {
+        final boolean hideMembersOnly = ContentAvailabilityFilter
+                .isHideMembersOnlyEnabled(layoutInflater.getContext());
+        final List<InfoItem> filteredData = new ArrayList<>(data.size());
+        for (final InfoItem item : data) {
+            if (!ContentAvailabilityFilter.shouldHide(hideMembersOnly, item)) {
+                filteredData.add(item);
+            }
+        }
+        return filteredData;
     }
 
     public void clearStreamItemList() {

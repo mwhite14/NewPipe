@@ -21,8 +21,9 @@ import org.schabi.newpipe.database.subscription.NotificationMode
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import org.schabi.newpipe.extractor.stream.StreamType
 import org.schabi.newpipe.local.subscription.FeedGroupIcon
+import org.schabi.newpipe.util.ContentAvailabilityFilter
 
-class FeedDatabaseManager(context: Context) {
+class FeedDatabaseManager(private val context: Context) {
     private val database = NewPipeDatabase.getInstance(context)
     private val feedTable = database.feedDAO()
     private val feedGroupTable = database.feedGroupDAO()
@@ -85,7 +86,10 @@ class FeedDatabaseManager(context: Context) {
         items: List<StreamInfoItem>,
         oldestAllowedDate: OffsetDateTime = FEED_OLDEST_ALLOWED_DATE
     ) {
-        val itemsToInsert = items.mapNotNull { stream ->
+        val hideMembersOnly = ContentAvailabilityFilter.isHideMembersOnlyEnabled(context)
+        val itemsToInsert = items.filterNot {
+            ContentAvailabilityFilter.shouldHide(hideMembersOnly, it)
+        }.mapNotNull { stream ->
             val uploadDate = stream.uploadDate
 
             when {

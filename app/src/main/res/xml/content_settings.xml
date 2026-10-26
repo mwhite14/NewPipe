@@ -75,6 +75,14 @@
         app:iconSpaceReserved="false" />
 
     <SwitchPreferenceCompat
+        android:defaultValue="true"
+        android:key="@string/hide_members_only_content"
+        android:summary="@string/hide_members_only_content_summary"
+        android:title="@string/hide_members_only_content_title"
+        app:singleLineTitle="false"
+        app:iconSpaceReserved="false" />
+
+    <SwitchPreferenceCompat
         android:defaultValue="false"
         android:key="@string/youtube_restricted_mode_enabled"
         android:summary="@string/youtube_restricted_mode_enabled_summary"
