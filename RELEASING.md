@@ -71,3 +71,28 @@ The APK filename passed to `publish.sh` must be `NewPipe-<app version>.apk`,
 where the app version is the numeric `versionName` from `ProjectConfig.kt`.
 The store script uses that filename for the release asset, so a fork-suffixed
 filename fails its asset lookup.
+
+## Weekly upstream security check
+
+`.github/workflows/upstream-security.yml` runs every Monday at 14:00 UTC
+(08:00 in Denver during daylight saving time). It checks the upstream
+`TeamNewPipe/NewPipe` `dev` branch for commits, security advisories, and release
+notes related to security since this fork's merge base.
+
+If it finds anything, it opens or updates one issue named
+`Upstream security watch` with links and a suggested merge action. When the
+findings are gone, it closes that issue. The check is a heuristic: a security
+fix with no security wording in its commit message or release notes can be
+missed.
+
+Run it manually with:
+
+```bash
+gh workflow run upstream-security.yml -R mwhite14/NewPipe
+```
+
+Preview the report locally without touching issues:
+
+```bash
+./scripts/check-upstream-security.sh --dry-run
+```

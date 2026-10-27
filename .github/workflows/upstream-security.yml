@@ -1,0 +1,32 @@
+name: Weekly upstream security check
+
+on:
+  schedule:
+    # Monday 14:00 UTC, 08:00 in Denver during daylight saving time.
+    - cron: '0 14 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: upstream-security
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out full fork history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check upstream security changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: ./scripts/check-upstream-security.sh
