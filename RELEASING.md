@@ -41,3 +41,33 @@ The workflow reads the signing key from repository secrets:
 
 Keep the signing key stable. Android only installs an update in place when the
 signing certificate matches.
+
+## Publish to the private app store
+
+The App Store only scans private repositories. This NewPipe repository is a
+public fork, so store artifacts are mirrored to the private
+`mwhite14/newpipe-store` repository, which holds `index.json` and the store
+release. The source code stays public; the APK and manifest stay private.
+
+After a GitHub release is published, copy the APK under the store's expected
+base-version filename and run the store publisher from the artifact repo:
+
+```bash
+TAG=v0.29.1-fork.1
+TMPDIR="$(mktemp -d)"
+gh release download "$TAG" --repo mwhite14/NewPipe --pattern '*.apk' --dir "$TMPDIR"
+cp "$TMPDIR"/*.apk "$TMPDIR/NewPipe-0.29.1.apk"
+
+cd ~/repo/newpipe-store
+git pull --ff-only
+~/repo/android_appstore/scripts/publish.sh \
+  --apk "$TMPDIR/NewPipe-0.29.1.apk" \
+  --description "YouTube frontend with members-only videos hidden by default." \
+  --changelog "What changed in this release" \
+  --push
+```
+
+The APK filename passed to `publish.sh` must be `NewPipe-<app version>.apk`,
+where the app version is the numeric `versionName` from `ProjectConfig.kt`.
+The store script uses that filename for the release asset, so a fork-suffixed
+filename fails its asset lookup.
