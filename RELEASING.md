@@ -22,9 +22,13 @@ The tag push triggers `.github/workflows/release-apk.yml`. The workflow runs the
 unit tests, builds and signs the release APK, writes a SHA-256 checksum, and
 creates the GitHub release with both files attached.
 
-Version names use upstream NewPipe's version plus a fork revision, for example
-`0.29.1-fork.1`. Increase the fork revision for fork-only changes; move to the
-new upstream version when rebasing.
+Release tags use upstream NewPipe's numeric version plus a fork revision, for
+example `v0.29.1-fork.1`. The Android `versionName` stays numeric (`0.29.1`)
+because the desktop Compose packaging rejects suffixes. The release tag, release
+title, APK filename, and Android `versionCode` all carry the fork revision.
+
+Increase the fork revision for fork-only changes; move to the new upstream
+version when rebasing.
 
 ## Signing
 

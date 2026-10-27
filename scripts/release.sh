@@ -19,6 +19,11 @@ MAJOR=$((10#${BASH_REMATCH[1]}))
 MINOR=$((10#${BASH_REMATCH[2]}))
 PATCH=$((10#${BASH_REMATCH[3]}))
 FORK_REVISION=$((10#${BASH_REMATCH[5]:-0}))
+if (( MAJOR > 999 || MINOR > 99 || PATCH > 99 || FORK_REVISION > 99 )); then
+    echo "Version components are too large for the version code scheme" >&2
+    exit 1
+fi
+APP_VERSION="$MAJOR.$MINOR.$PATCH"
 VERSION_CODE=$((MAJOR * 1000000 + MINOR * 10000 + PATCH * 100 + FORK_REVISION))
 TAG="v$VERSION"
 ROOT="$(git rev-parse --show-toplevel)"
@@ -46,7 +51,7 @@ if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
     exit 1
 fi
 
-python3 - "$VERSION" "$VERSION_CODE" <<'PY'
+python3 - "$APP_VERSION" "$VERSION_CODE" <<'PY'
 import re
 import sys
 from pathlib import Path

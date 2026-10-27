@@ -38,22 +38,25 @@ jobs:
         run: |
           set -euo pipefail
 
-          VERSION_NAME="$(sed -n 's/^const val NEWPIPE_VERSION_NAME = "\(.*\)"$/\1/p' \
+          APP_VERSION="$(sed -n 's/^const val NEWPIPE_VERSION_NAME = "\(.*\)"$/\1/p' \
             buildSrc/src/main/kotlin/ProjectConfig.kt)"
           VERSION_CODE="$(sed -n 's/^const val NEWPIPE_VERSION_CODE = \([0-9][0-9]*\)$/\1/p' \
             buildSrc/src/main/kotlin/ProjectConfig.kt)"
+          DISPLAY_VERSION="${GITHUB_REF_NAME#v}"
 
-          if [[ -z "$VERSION_NAME" || -z "$VERSION_CODE" ]]; then
+          if [[ -z "$APP_VERSION" || -z "$VERSION_CODE" ]]; then
             echo "Could not read version from ProjectConfig.kt" >&2
             exit 1
           fi
-          if [[ "v$VERSION_NAME" != "$GITHUB_REF_NAME" ]]; then
-            echo "Tag $GITHUB_REF_NAME does not match version $VERSION_NAME" >&2
+          if [[ "$DISPLAY_VERSION" != "$APP_VERSION" && \
+                "$DISPLAY_VERSION" != "$APP_VERSION"-fork.* ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match app version $APP_VERSION" >&2
             exit 1
           fi
 
           {
-            echo "name=$VERSION_NAME"
+            echo "app=$APP_VERSION"
+            echo "display=$DISPLAY_VERSION"
             echo "code=$VERSION_CODE"
           } >> "$GITHUB_OUTPUT"
 
@@ -79,7 +82,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_NAME: ${{ steps.version.outputs.display }}
         run: |
           set -euo pipefail
 
@@ -105,7 +108,7 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_NAME: ${{ steps.version.outputs.display }}
         run: |
           set -euo pipefail
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
