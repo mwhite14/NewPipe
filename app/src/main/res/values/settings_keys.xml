@@ -53,6 +53,42 @@
         <item>30000</item>
     </string-array>
 
+    <!-- Dedicated durations of the in-app and notification rewind/fast-forward buttons, which
+    are independent from the seekbar/double-tap seek_duration above. -->
+    <string name="seek_backward_duration_key">seek_backward_duration</string>
+    <string name="seek_forward_duration_key">seek_forward_duration</string>
+    <string name="seek_backward_duration_default_value">15000</string>
+    <string name="seek_forward_duration_default_value">30000</string>
+    <string-array name="seek_button_duration_description">
+        <!--   They are overridden in VideoAudioSettingsFragment.java to show the translated
+        seconds. Otherwise this array is picked-->
+        <item>5 seconds</item>
+        <item>10 seconds</item>
+        <item>15 seconds</item>
+        <item>20 seconds</item>
+        <item>25 seconds</item>
+        <item>30 seconds</item>
+        <item>1 minute</item>
+    </string-array>
+    <string-array name="seek_button_duration_value_backward">
+        <item>5000</item>
+        <item>10000</item>
+        <item>15000</item>
+        <item>20000</item>
+        <item>25000</item>
+        <item>30000</item>
+        <item>60000</item>
+    </string-array>
+    <string-array name="seek_button_duration_value_forward">
+        <item>5000</item>
+        <item>10000</item>
+        <item>15000</item>
+        <item>20000</item>
+        <item>25000</item>
+        <item>30000</item>
+        <item>60000</item>
+    </string-array>
+
     <string name="progressive_load_interval_key">progressive_load_interval</string>
     <string name="progressive_load_interval_default_value">64</string>
     <string name="progressive_load_interval_exoplayer_default_value">exoplayer_default</string>

@@ -9,6 +9,8 @@ import static org.schabi.newpipe.player.notification.NotificationConstants.ACTIO
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_PLAY_PAUSE;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_PLAY_PREVIOUS;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_REPEAT;
+import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_SEEK_BACKWARD_15;
+import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_SEEK_FORWARD_30;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_SHUFFLE;
 
 import android.annotation.SuppressLint;
@@ -86,6 +88,16 @@ public final class NotificationActionData {
                 return new NotificationActionData(ACTION_FAST_FORWARD,
                         ctx.getString(com.google.android.exoplayer2.ui.R.string
                                 .exo_controls_fastforward_description), baseActionIcon);
+
+            case NotificationConstants.SEEK_BACKWARD_15:
+                return new NotificationActionData(ACTION_SEEK_BACKWARD_15,
+                        NotificationConstants.getActionName(ctx,
+                                NotificationConstants.SEEK_BACKWARD_15), baseActionIcon);
+
+            case NotificationConstants.SEEK_FORWARD_30:
+                return new NotificationActionData(ACTION_SEEK_FORWARD_30,
+                        NotificationConstants.getActionName(ctx,
+                                NotificationConstants.SEEK_FORWARD_30), baseActionIcon);
 
             case NotificationConstants.SMART_REWIND_PREVIOUS:
                 if (player.getPlayQueue() != null && player.getPlayQueue().size() > 1) {

@@ -14,7 +14,10 @@ import static org.schabi.newpipe.player.Player.STATE_PLAYING;
 import static org.schabi.newpipe.player.helper.PlayerHelper.formatSpeed;
 import static org.schabi.newpipe.player.helper.PlayerHelper.getTimeString;
 import static org.schabi.newpipe.player.helper.PlayerHelper.nextResizeModeAndSaveToPrefs;
-import static org.schabi.newpipe.player.helper.PlayerHelper.retrieveSeekDurationFromPreferences;
+import static org.schabi.newpipe.player.helper.PlayerHelper.retrieveSeekBackwardDurationFromPreferences;
+import static org.schabi.newpipe.player.helper.PlayerHelper.retrieveSeekForwardDurationFromPreferences;
+import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_SEEK_BACKWARD_15;
+import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_SEEK_FORWARD_30;
 
 import android.content.Intent;
 import android.content.res.Resources;
@@ -92,6 +95,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBarChangeListener,
@@ -103,6 +107,7 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
     public static final long DEFAULT_CONTROLS_HIDE_TIME = 2000;  // 2 Seconds
     public static final long DPAD_CONTROLS_HIDE_TIME = 7000;  // 7 Seconds
     public static final int SEEK_OVERLAY_DURATION = 450; // 450 millis
+    private static final long SEEK_OVERLAY_STEP_VISIBILITY_DURATION = 800; // 800 millis
 
     // other constants (TODO remove playback speeds and use normal menu for popup, too)
     private static final float[] PLAYBACK_SPEEDS = {0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f};
@@ -227,6 +232,10 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
         binding.playPauseButton.setOnClickListener(makeOnClickListener(player::playPause));
         binding.playPreviousButton.setOnClickListener(makeOnClickListener(player::playPrevious));
         binding.playNextButton.setOnClickListener(makeOnClickListener(player::playNext));
+        binding.playBackwardButton.setOnClickListener(
+                makeOnClickListener(() -> onSeekStepClicked(false)));
+        binding.playForwardButton.setOnClickListener(
+                makeOnClickListener(() -> onSeekStepClicked(true)));
 
         binding.moreOptionsButton.setOnClickListener(
                 makeOnClickListener(this::onMoreOptionsClicked));
@@ -303,6 +312,8 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
         binding.playPauseButton.setOnClickListener(null);
         binding.playPreviousButton.setOnClickListener(null);
         binding.playNextButton.setOnClickListener(null);
+        binding.playBackwardButton.setOnClickListener(null);
+        binding.playForwardButton.setOnClickListener(null);
 
         binding.moreOptionsButton.setOnClickListener(null);
         binding.moreOptionsButton.setOnLongClickListener(null);
@@ -325,7 +336,7 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
      */
     private void setupPlayerSeekOverlay() {
         binding.fastSeekOverlay
-                .seekSecondsSupplier(() -> retrieveSeekDurationFromPreferences(player) / 1000)
+                .seekSecondsSupplier(this::getSeekButtonDurationSeconds)
                 .performListener(new PlayerFastSeekOverlay.PerformListener() {
 
                     @Override
@@ -372,13 +383,44 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
                     public void seek(final boolean forward) {
                         playerGestureListener.keepInDoubleTapMode();
                         if (forward) {
-                            player.fastForward();
+                            player.seekForwardStep();
                         } else {
-                            player.fastRewind();
+                            player.seekBackwardStep();
                         }
                     }
                 });
         playerGestureListener.doubleTapControls(binding.fastSeekOverlay);
+    }
+
+    /**
+     * Performs a single step of the rewind/fast-forward buttons and shows the seeked amount.
+     *
+     * @param forward whether to fast-forward or to rewind
+     */
+    private void onSeekStepClicked(final boolean forward) {
+        if (forward) {
+            player.seekForwardStep();
+        } else {
+            player.seekBackwardStep();
+        }
+        showSeekStepOverlay();
+    }
+
+    private void showSeekStepOverlay() {
+        if (!player.canSeek()) {
+            return;
+        }
+        animate(binding.fastSeekOverlay, true, SEEK_OVERLAY_DURATION);
+        new Handler(Looper.getMainLooper()).postDelayed(
+                () -> animate(binding.fastSeekOverlay, false, SEEK_OVERLAY_DURATION),
+                SEEK_OVERLAY_STEP_VISIBILITY_DURATION);
+    }
+
+    private int getSeekButtonDurationSeconds() {
+        // both buttons seek by their own configured duration; the overlay shows the shortest one
+        return (int) TimeUnit.MILLISECONDS.toSeconds(Math.min(
+                retrieveSeekBackwardDurationFromPreferences(player),
+                retrieveSeekForwardDurationFromPreferences(player)));
     }
 
     public void deinitPlayerSeekOverlay() {
@@ -465,6 +507,11 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
             // thumbnail is not re-scaled, it can be larger than the current screen height and thus
             // enlarging the whole player. This causes the seekbar to be out of the visible area.
             updateEndScreenThumbnail(player.getThumbnail());
+        } else if (ACTION_SEEK_BACKWARD_15.equals(intent.getAction())
+                || ACTION_SEEK_FORWARD_30.equals(intent.getAction())) {
+            // the seek step was performed from the notification: flash the fast seek overlay, so
+            // the seeked amount is visible right when the user unlocks the phone
+            showSeekStepOverlay();
         }
     }
     //endregion
@@ -952,6 +999,10 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
 
     private void animatePlayButtons(final boolean show, final long duration) {
         animate(binding.playPauseButton, show, duration, AnimationType.SCALE_AND_ALPHA);
+        // seek buttons are only useful when the stream can be seeked
+        final boolean showSeek = show && player.canSeek();
+        animate(binding.playBackwardButton, showSeek, duration, AnimationType.SCALE_AND_ALPHA);
+        animate(binding.playForwardButton, showSeek, duration, AnimationType.SCALE_AND_ALPHA);
 
         @Nullable final PlayQueue playQueue = player.getPlayQueue();
         if (playQueue == null) {

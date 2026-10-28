@@ -467,6 +467,39 @@ public final class PlayerHelper {
                 player.getContext().getString(R.string.seek_duration_default_value))));
     }
 
+    /**
+     * @param player the player whose preferences are used
+     * @return the duration in milliseconds used by the rewind button in the app and in the
+     *         notification
+     */
+    public static int retrieveSeekBackwardDurationFromPreferences(final Player player) {
+        return retrieveSeekButtonDuration(player, R.string.seek_backward_duration_key,
+                R.string.seek_backward_duration_default_value);
+    }
+
+    /**
+     * @param player the player whose preferences are used
+     * @return the duration in milliseconds used by the fast-forward button in the app and in the
+     *         notification
+     */
+    public static int retrieveSeekForwardDurationFromPreferences(final Player player) {
+        return retrieveSeekButtonDuration(player, R.string.seek_forward_duration_key,
+                R.string.seek_forward_duration_default_value);
+    }
+
+    private static int retrieveSeekButtonDuration(final Player player, final int keyRes,
+                                                  final int defaultRes) {
+        final String defaultValue = player.getContext().getString(defaultRes);
+        final String value = player.getPrefs().getString(
+                player.getContext().getString(keyRes), defaultValue);
+        try {
+            return Integer.parseInt(value == null ? defaultValue : value);
+        } catch (final NumberFormatException e) {
+            // the preference holds an invalid value
+            return Integer.parseInt(defaultValue);
+        }
+    }
+
     // endregion
     // region Format
 
