@@ -7,6 +7,8 @@ import android.provider.Settings;
 import android.text.format.DateUtils;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 import androidx.preference.ListPreference;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -49,6 +51,12 @@ public class VideoAudioSettingsFragment extends BasePreferenceFragment {
                 updateSeekOptions();
             } else if (getString(R.string.show_higher_resolutions_key).equals(key)) {
                 updateResolutionOptions();
+            } else if (getString(R.string.seek_backward_duration_key).equals(key)) {
+                setSeekDurations(requirePreference(R.string.seek_backward_duration_key),
+                        R.array.seek_button_duration_value_backward, false);
+            } else if (getString(R.string.seek_forward_duration_key).equals(key)) {
+                setSeekDurations(requirePreference(R.string.seek_forward_duration_key),
+                        R.array.seek_button_duration_value_forward, false);
             }
         };
     }
@@ -131,37 +139,60 @@ public class VideoAudioSettingsFragment extends BasePreferenceFragment {
      * Exoplayer can't seek 5 seconds in audio when using inexact seek.
      */
     private void updateSeekOptions() {
-        // initializing R.array.seek_duration_description to display the translation of seconds
+        final ListPreference durations = requirePreference(R.string.seek_duration_key);
+        setSeekDurations(durations, R.array.seek_duration_value, true);
+
+        final ListPreference backwardDuration =
+                requirePreference(R.string.seek_backward_duration_key);
+        setSeekDurations(backwardDuration, R.array.seek_button_duration_value_backward, false);
+        backwardDuration.setSummary(getString(R.string.seek_button_duration_summary));
+
+        final ListPreference forwardDuration =
+                requirePreference(R.string.seek_forward_duration_key);
+        setSeekDurations(forwardDuration, R.array.seek_button_duration_value_forward, false);
+        forwardDuration.setSummary(getString(R.string.seek_button_duration_summary));
+    }
+
+    /**
+     * Fills the entries and entry values of a seek duration preference, translating the durations
+     * to the current language and hiding the durations unsupported by inexact seek.
+     *
+     * @param durations                 the preference to fill
+     * @param valuesRes                 the string array resource containing the durations in millis
+     * @param warnAboutUnsupportedValue whether to warn the user and change the current value when
+     *                                  it becomes unsupported by the inexact seek setting
+     */
+    private void setSeekDurations(@NonNull final ListPreference durations,
+                                  @StringRes final int valuesRes,
+                                  final boolean warnAboutUnsupportedValue) {
+        final boolean inexactSeek = getPreferenceManager().getSharedPreferences()
+                .getBoolean(getString(R.string.use_inexact_seek_key), false);
+        // initializing the description array to display the translation of seconds
         final Resources res = getResources();
-        final String[] durationsValues = res.getStringArray(R.array.seek_duration_value);
+        final String[] durationsValues = res.getStringArray(valuesRes);
         final List<String> displayedDurationValues = new LinkedList<>();
         final List<String> displayedDescriptionValues = new LinkedList<>();
-        int currentDurationValue;
-        final boolean inexactSeek = getPreferenceManager().getSharedPreferences()
-                .getBoolean(res.getString(R.string.use_inexact_seek_key), false);
 
         for (final String durationsValue : durationsValues) {
-            currentDurationValue =
+            final int currentDurationValue =
                     Integer.parseInt(durationsValue) / (int) DateUtils.SECOND_IN_MILLIS;
             if (inexactSeek && currentDurationValue % 10 == 5) {
                 continue;
             }
 
             displayedDurationValues.add(durationsValue);
-            try {
-                displayedDescriptionValues.add(String.format(
-                        res.getQuantityString(R.plurals.seconds,
-                                currentDurationValue),
-                        currentDurationValue));
-            } catch (final Resources.NotFoundException ignored) {
-                // if this happens, the translation is missing,
-                // and the english string will be displayed instead
-            }
+            displayedDescriptionValues.add(String.format(
+                    res.getQuantityString(R.plurals.seconds, currentDurationValue),
+                    currentDurationValue));
         }
 
-        final ListPreference durations = requirePreference(R.string.seek_duration_key);
         durations.setEntryValues(displayedDurationValues.toArray(new CharSequence[0]));
         durations.setEntries(displayedDescriptionValues.toArray(new CharSequence[0]));
+
+        if (!warnAboutUnsupportedValue) {
+            // keep the selected value even if it is hidden, so no user choice is silently lost
+            return;
+        }
         final int selectedDuration = Integer.parseInt(durations.getValue());
         if (inexactSeek && selectedDuration / (int) DateUtils.SECOND_IN_MILLIS % 10 == 5) {
             final int newDuration = selectedDuration / (int) DateUtils.SECOND_IN_MILLIS + 5;

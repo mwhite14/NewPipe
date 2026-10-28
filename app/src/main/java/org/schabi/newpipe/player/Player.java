@@ -31,10 +31,14 @@ import static com.google.android.exoplayer2.Player.RepeatMode;
 import static org.schabi.newpipe.extractor.ServiceList.YouTube;
 import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
 import static org.schabi.newpipe.player.helper.PlayerHelper.retrievePlaybackParametersFromPrefs;
+import static org.schabi.newpipe.player.helper.PlayerHelper.retrieveSeekBackwardDurationFromPreferences;
 import static org.schabi.newpipe.player.helper.PlayerHelper.retrieveSeekDurationFromPreferences;
+import static org.schabi.newpipe.player.helper.PlayerHelper.retrieveSeekForwardDurationFromPreferences;
 import static org.schabi.newpipe.player.helper.PlayerHelper.savePlaybackParametersToPrefs;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_CLOSE;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_FAST_FORWARD;
+import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_SEEK_BACKWARD_15;
+import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_SEEK_FORWARD_30;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_FAST_REWIND;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_PLAY_NEXT;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_PLAY_PAUSE;
@@ -798,6 +802,8 @@ public final class Player implements PlaybackListener, Listener {
         intentFilter.addAction(ACTION_PLAY_NEXT);
         intentFilter.addAction(ACTION_FAST_REWIND);
         intentFilter.addAction(ACTION_FAST_FORWARD);
+        intentFilter.addAction(ACTION_SEEK_BACKWARD_15);
+        intentFilter.addAction(ACTION_SEEK_FORWARD_30);
         intentFilter.addAction(ACTION_REPEAT);
         intentFilter.addAction(ACTION_SHUFFLE);
         intentFilter.addAction(ACTION_RECREATE_NOTIFICATION);
@@ -841,6 +847,12 @@ public final class Player implements PlaybackListener, Listener {
                 break;
             case ACTION_FAST_FORWARD:
                 fastForward();
+                break;
+            case ACTION_SEEK_BACKWARD_15:
+                seekBackwardStep();
+                break;
+            case ACTION_SEEK_FORWARD_30:
+                seekForwardStep();
                 break;
             case ACTION_REPEAT:
                 cycleNextRepeatMode();
@@ -1848,6 +1860,47 @@ public final class Player implements PlaybackListener, Listener {
         }
         seekBy(-retrieveSeekDurationFromPreferences(this));
         triggerProgressUpdate();
+    }
+
+    /**
+     * Seeks backwards by the duration configured for the rewind button (in the app and in the
+     * notification).
+     */
+    public void seekBackwardStep() {
+        if (DEBUG) {
+            Log.d(TAG, "seekBackwardStep() called");
+        }
+        seekBy(-retrieveSeekBackwardDurationFromPreferences(this));
+        triggerProgressUpdate();
+    }
+
+    /**
+     * Seeks forwards by the duration configured for the fast-forward button (in the app and in
+     * the notification).
+     */
+    public void seekForwardStep() {
+        if (DEBUG) {
+            Log.d(TAG, "seekForwardStep() called");
+        }
+        seekBy(retrieveSeekForwardDurationFromPreferences(this));
+        triggerProgressUpdate();
+    }
+
+    /**
+     * @return true if seeking is possible inside the current stream, so the stream is neither a
+     *         live stream nor a stream with an unknown duration
+     */
+    public boolean canSeek() {
+        if (exoPlayerIsNull()) {
+            return false;
+        }
+        try {
+            return !simpleExoPlayer.isCurrentMediaItemDynamic()
+                    && simpleExoPlayer.getDuration() > 0;
+        } catch (final IndexOutOfBoundsException e) {
+            // no media item is set
+            return false;
+        }
     }
     //endregion
 

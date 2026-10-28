@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.preference.PreferenceManager;
 
 import org.schabi.newpipe.App;
 import org.schabi.newpipe.R;
@@ -45,6 +46,10 @@ public final class NotificationConstants {
             BASE_ACTION + ".player.MainPlayer.ACTION_FAST_REWIND";
     public static final String ACTION_FAST_FORWARD =
             BASE_ACTION + ".player.MainPlayer.ACTION_FAST_FORWARD";
+    public static final String ACTION_SEEK_BACKWARD_15 =
+            BASE_ACTION + ".player.MainPlayer.ACTION_SEEK_BACKWARD_15";
+    public static final String ACTION_SEEK_FORWARD_30 =
+            BASE_ACTION + ".player.MainPlayer.ACTION_SEEK_FORWARD_30";
     public static final String ACTION_SHUFFLE =
             BASE_ACTION + ".player.MainPlayer.ACTION_SHUFFLE";
     public static final String ACTION_RECREATE_NOTIFICATION =
@@ -63,17 +68,19 @@ public final class NotificationConstants {
     public static final int REPEAT = 9;
     public static final int SHUFFLE = 10;
     public static final int CLOSE = 11;
+    public static final int SEEK_BACKWARD_15 = 12;
+    public static final int SEEK_FORWARD_30 = 13;
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({NOTHING, PREVIOUS, NEXT, REWIND, FORWARD,
             SMART_REWIND_PREVIOUS, SMART_FORWARD_NEXT, PLAY_PAUSE, PLAY_PAUSE_BUFFERING, REPEAT,
-            SHUFFLE, CLOSE})
+            SHUFFLE, CLOSE, SEEK_BACKWARD_15, SEEK_FORWARD_30})
     public @interface Action { }
 
     @Action
     public static final int[] ALL_ACTIONS = {NOTHING, PREVIOUS, NEXT, REWIND, FORWARD,
             SMART_REWIND_PREVIOUS, SMART_FORWARD_NEXT, PLAY_PAUSE, PLAY_PAUSE_BUFFERING, REPEAT,
-            SHUFFLE, CLOSE};
+            SHUFFLE, CLOSE, SEEK_BACKWARD_15, SEEK_FORWARD_30};
 
     @DrawableRes
     public static final int[] ACTION_ICONS = {
@@ -89,6 +96,8 @@ public final class NotificationConstants {
             com.google.android.exoplayer2.ui.R.drawable.exo_icon_repeat_all,
             com.google.android.exoplayer2.ui.R.drawable.exo_icon_shuffle_on,
             R.drawable.ic_close,
+            R.drawable.ic_seek_backward,
+            R.drawable.ic_seek_forward,
     };
 
 
@@ -164,11 +173,37 @@ public final class NotificationConstants {
                 return context.getString(R.string.notification_action_shuffle);
             case CLOSE:
                 return context.getString(R.string.close);
+            case SEEK_BACKWARD_15:
+                return Localization.concatenateStrings(
+                        context.getString(com.google.android.exoplayer2.ui.R.string
+                                .exo_controls_rewind_description),
+                        getSeekDurationLabel(context, R.string.seek_backward_duration_key,
+                                R.string.seek_backward_duration_default_value));
+            case SEEK_FORWARD_30:
+                return Localization.concatenateStrings(
+                        context.getString(com.google.android.exoplayer2.ui.R.string
+                                .exo_controls_fastforward_description),
+                        getSeekDurationLabel(context, R.string.seek_forward_duration_key,
+                                R.string.seek_forward_duration_default_value));
             case NOTHING: default:
                 return context.getString(R.string.notification_action_nothing);
         }
     }
 
+
+    @NonNull
+    private static String getSeekDurationLabel(@NonNull final Context context, final int keyRes,
+                                                final int defaultRes) {
+        final String value = PreferenceManager.getDefaultSharedPreferences(context)
+                .getString(context.getString(keyRes), context.getString(defaultRes));
+        final int seconds;
+        try {
+            seconds = Integer.parseInt(value) / 1000;
+        } catch (final NumberFormatException e) {
+            return context.getString(R.string.notification_action_seek);
+        }
+        return context.getResources().getQuantityString(R.plurals.seconds, seconds, seconds);
+    }
 
     /**
      * @param context the context to use

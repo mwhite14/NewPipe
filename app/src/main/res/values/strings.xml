@@ -69,6 +69,7 @@
     <string name="notification_action_shuffle">Shuffle</string>
     <string name="notification_action_buffering">Buffering</string>
     <string name="notification_action_nothing">Nothing</string>
+    <string name="notification_action_seek">Seek</string>
     <string name="notification_colorize_title">Colorize notification</string>
     <string name="notification_colorize_summary">Have Android customize the notification\'s color according to the main color in the thumbnail (note that this is not available on all devices)</string>
     <string name="play_audio">Audio</string>
@@ -84,6 +85,11 @@
     <string name="use_inexact_seek_title">Use fast inexact seek</string>
     <string name="use_inexact_seek_summary">Inexact seek allows the player to seek to positions faster with reduced precision. Seeking for 5, 15 or 25 seconds doesn\'t work with this</string>
     <string name="seek_duration_title">Fast-forward/-rewind seek duration</string>
+    <string name="seek_backward_duration_title">Rewind button duration</string>
+    <string name="seek_forward_duration_title">Fast-forward button duration</string>
+    <string name="seek_button_duration_summary">Duration of the rewind and fast-forward buttons in the player and in the notification</string>
+    <string name="seek_backward">Rewind</string>
+    <string name="seek_forward">Fast-forward</string>
     <string name="progressive_load_interval_title">Playback load interval size</string>
     <string name="progressive_load_interval_summary">Change the load interval size on progressive contents (currently %s). A lower value may speed up their initial loading</string>
     <string name="clear_queue_confirmation_title">Ask for confirmation before clearing a queue</string>
