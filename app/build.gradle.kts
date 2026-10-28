@@ -61,13 +61,26 @@ configure<ApplicationExtension> {
         debug {
             isDebuggable = true
 
-            // suffix the app id and the app name with git branch name
-            if (normalizedWorkingBranch.isEmpty() || workingBranch in defaultBranches) {
+            // branch previews get the git branch name as suffix, so that they install
+            // alongside the store release. The application id is limited to 50 characters on
+            // Android, so overlong branch names are dropped.
+            val previewSuffix = if (!normalizedWorkingBranch.isEmpty()
+                    && workingBranch !in defaultBranches) {
+                ".$normalizedWorkingBranch"
+            } else {
+                ""
+            }
+            if (NEWPIPE_APPLICATION_ID_OLD.length + ".debug".length
+                    + previewSuffix.length <= 50) {
+                applicationIdSuffix = ".debug$previewSuffix"
+                resValue("string", "app_name", if (previewSuffix.isEmpty()) {
+                    "NewPipe Debug"
+                } else {
+                    "NewPipe $workingBranch"
+                })
+            } else {
                 applicationIdSuffix = ".debug"
                 resValue("string", "app_name", "NewPipe Debug")
-            } else {
-                applicationIdSuffix = ".debug.$normalizedWorkingBranch"
-                resValue("string", "app_name", "NewPipe $workingBranch")
             }
         }
 
@@ -88,15 +101,10 @@ configure<ApplicationExtension> {
             initWith(getByName("release"))
             signingConfig = signingConfigs.getByName("debug")
             isDefault = true
-
-            // suffix the app id and the app name with git branch name
-            if (normalizedWorkingBranch.isEmpty() || workingBranch in defaultBranches) {
-                applicationIdSuffix = ".continuous"
-                resValue("string", "app_name", "NewPipe Continuous")
-            } else {
-                applicationIdSuffix = ".continuous.$normalizedWorkingBranch"
-                resValue("string", "app_name", "NewPipe $workingBranch")
-            }
+            // previews share the debug suffix, so that the application id stays inside the
+            // Android 50 character limit together with the branch name
+            applicationIdSuffix = ".debug"
+            resValue("string", "app_name", "NewPipe Debug")
         }
     }
 
